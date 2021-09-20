@@ -1,0 +1,12 @@
+#: a + b  -- normal			-- X 
+#: + a b  -- easy for AST	-- Y as it easy and I like LISP
+#: a b +  -- easy for stack	-- X as we don't have adjustable stack
+
+a:u64 = 10;
+b:u64 = 20;
+
+
+println(u64__str(+ a b));
+
+
+
