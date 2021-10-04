@@ -2,17 +2,27 @@
 
 bool BrickGameLG::was_created = false;
 
+
 BrickGameLG::
-BrickGameLG(Renderer *renderer, KeyboardHandler *kbdhandl, uint64_t brick_size, uvec2 field_offset, uvec2 field_size, std::chrono::duration<double> tick_time) {
+BrickGameLG(Renderer *renderer, TTF_Font *font,
+KeyboardHandler *kbdhandl, uint64_t brick_size,
+uvec2 field_offset, uvec2 field_size, double tick_time, double tick_time_change,
+uint64_t score_per_level, uint64_t score_per_row) {
     
    	if(this->was_created) {
         throw MoreThenOneObjectExists();
 	}
-
+	
 	this->renderer = renderer;
+	this->font = font;
     this->kbdhandl = kbdhandl;
     this->brick_size = brick_size;
-    this->tick_time = tick_time;
+    this->tick_time = std::chrono::duration<double>(tick_time);
+    this->tick_time_change = std::chrono::duration<double>(tick_time_change);
+	this->score_per_level = score_per_level;
+	this->score_per_row = score_per_row;
+	score = 0;
+	current_level = 0;
     was_created = true;
     can_input = true;
     
@@ -21,38 +31,59 @@ BrickGameLG(Renderer *renderer, KeyboardHandler *kbdhandl, uint64_t brick_size, 
     const BrickGameBrick bb = {clr_blue, brick};
     const BrickGameBrick nb = {clr_black, nothing};
 
-	TetraminoOrientation tmp_orientation1 ={{{nb, nb, rb, nb, nb},
+    TetraminoOrientation tmp_orientation1;
+    TetraminoOrientation tmp_orientation2;
+    TetraminoOrientation tmp_orientation3;
+    TetraminoOrientation tmp_orientation4;
+    
+    /** Important: tetramino orientations must be reversed when adding
+      * when adding new tetramino. IDK why. */
+
+	tmp_orientation1 =                     {{{nb, nb, nb, nb, nb},
 											 {nb, nb, rb, nb, nb},
 											 {nb, nb, rb, nb, nb}, 
 											 {nb, nb, rb, nb, nb},
 											 {nb, nb, rb, nb, nb}}};
-	TetraminoOrientation tmp_orientation2 ={{{nb, nb, nb, nb, nb},
+
+	tmp_orientation2 =                     {{{nb, nb, nb, nb, nb},
 											 {nb, nb, nb, nb, nb},
-											 {rb, rb, rb, rb, rb}, 
+											 {rb, rb, rb, rb, nb}, 
+											 {nb, nb, nb, nb, nb},
+											 {nb, nb, nb, nb, nb}}};
+
+	tmp_orientation3 =                     {{{nb, nb, rb, nb, nb},
+											 {nb, nb, rb, nb, nb},
+											 {nb, nb, rb, nb, nb}, 
+											 {nb, nb, rb, nb, nb},
+											 {nb, nb, nb, nb, nb}}};
+
+	tmp_orientation4 =                     {{{nb, nb, nb, nb, nb},
+											 {nb, nb, nb, nb, nb},
+											 {nb, rb, rb, rb, rb}, 
 											 {nb, nb, nb, nb, nb},
 											 {nb, nb, nb, nb, nb}}};
  
-	this->stick_tetramino = {{tmp_orientation1, tmp_orientation2}, 0, {5, 0}};
+	this->stick_tetramino = {{tmp_orientation4, tmp_orientation3, tmp_orientation2, tmp_orientation1}, 0, {5, 0}};
     
-	tmp_orientation1 =					   {{{nb, nb, nb, nb, nb},
+	tmp_orientation4 =					   {{{nb, nb, nb, nb, nb},
 											 {nb, nb, gb, gb, nb},
 											 {nb, nb, gb, nb, nb}, 
 											 {nb, nb, gb, nb, nb},
 											 {nb, nb, nb, nb, nb}}};
     
-	tmp_orientation2 =					   {{{nb, nb, nb, nb, nb},
+	tmp_orientation3 =					   {{{nb, nb, nb, nb, nb},
 											 {nb, nb, nb, nb, nb},
 											 {nb, gb, gb, gb, nb}, 
 											 {nb, nb, nb, gb, nb},
 											 {nb, nb, nb, nb, nb}}};
 
-	TetraminoOrientation tmp_orientation3 ={{{nb, nb, nb, nb, nb},
+	tmp_orientation2 ={{{nb, nb, nb, nb, nb},
 											 {nb, nb, gb, nb, nb},
 											 {nb, nb, gb, nb, nb}, 
 											 {nb, gb, gb, nb, nb},
 											 {nb, nb, nb, nb, nb}}};
 
-	TetraminoOrientation tmp_orientation4 ={{{nb, nb, nb, nb, nb},
+	tmp_orientation1 ={{{nb, nb, nb, nb, nb},
 											 {nb, gb, nb, nb, nb},
 											 {nb, gb, gb, gb, nb}, 
 											 {nb, nb, nb, nb, nb},
@@ -60,25 +91,25 @@ BrickGameLG(Renderer *renderer, KeyboardHandler *kbdhandl, uint64_t brick_size, 
 
     this->L_r_tetramino = {{tmp_orientation1, tmp_orientation2, tmp_orientation3, tmp_orientation4}, 0, {5, 0}};
 
-	tmp_orientation1 =					   {{{nb, nb, nb, nb, nb},
+	tmp_orientation4 =					   {{{nb, nb, nb, nb, nb},
 											 {nb, gb, gb, nb, nb},
 											 {nb, nb, gb, nb, nb}, 
 											 {nb, nb, gb, nb, nb},
 											 {nb, nb, nb, nb, nb}}};
     
-	tmp_orientation2 =					   {{{nb, nb, nb, nb, nb},
+	tmp_orientation3 =					   {{{nb, nb, nb, nb, nb},
 											 {nb, nb, nb, gb, nb},
 											 {nb, gb, gb, gb, nb}, 
 											 {nb, nb, nb, nb, nb},
 											 {nb, nb, nb, nb, nb}}};
 
-	tmp_orientation3 ={{{nb, nb, nb, nb, nb},
+	tmp_orientation2 =                     {{{nb, nb, nb, nb, nb},
 											 {nb, nb, gb, nb, nb},
 											 {nb, nb, gb, nb, nb}, 
 											 {nb, nb, gb, gb, nb},
 											 {nb, nb, nb, nb, nb}}};
 
-	tmp_orientation4 ={{{nb, nb, nb, nb, nb},
+	tmp_orientation1 =                     {{{nb, nb, nb, nb, nb},
 											 {nb, nb, nb, nb, nb},
 											 {nb, gb, gb, gb, nb}, 
 											 {nb, gb, nb, nb, nb},
@@ -93,77 +124,79 @@ BrickGameLG(Renderer *renderer, KeyboardHandler *kbdhandl, uint64_t brick_size, 
     this->block_tetramino = {{tmp_orientation1}, 0, {5, 0}};
     
     
-	tmp_orientation1 =					   {{{nb, nb, nb, nb, nb},
+	tmp_orientation4 =					   {{{nb, nb, nb, nb, nb},
 											 {nb, nb, nb, nb, nb},
 											 {nb, rb, rb, nb, nb}, 
 											 {nb, nb, rb, rb, nb},
 											 {nb, nb, nb, nb, nb}}};
 
-	tmp_orientation2 =					   {{{nb, nb, nb, nb, nb},
+	tmp_orientation3 =					   {{{nb, nb, nb, nb, nb},
 											 {nb, nb, rb, nb, nb},
 											 {nb, rb, rb, nb, nb}, 
 											 {nb, rb, nb, nb, nb},
 											 {nb, nb, nb, nb, nb}}};
 
-	tmp_orientation3 =					   {{{nb, nb, nb, nb, nb},
+    
+	tmp_orientation2 =					   {{{nb, nb, nb, nb, nb},
 											 {nb, rb, rb, nb, nb},
 											 {nb, nb, rb, rb, nb}, 
 											 {nb, nb, nb, nb, nb},
 											 {nb, nb, nb, nb, nb}}};
 
-	tmp_orientation4 =					   {{{nb, nb, nb, nb, nb},
-											 {nb, nb, nb, nb, nb},
+	tmp_orientation1 =					   {{{nb, nb, nb, nb, nb},
+											 {nb, nb, nb, rb, nb},
 											 {nb, nb, rb, rb, nb}, 
-											 {nb, rb, rb, nb, nb},
+											 {nb, nb, rb, nb, nb},
 											 {nb, nb, nb, nb, nb}}};
+   
     
 	this->Z_tetramino = {{{tmp_orientation1, tmp_orientation2, tmp_orientation3, tmp_orientation4}}, 0, {5, 0}};
 
-	tmp_orientation1 =					   {{{nb, nb, nb, nb, nb},
+	tmp_orientation4 =					   {{{nb, nb, nb, nb, nb},
 											 {nb, nb, nb, nb, nb},
 											 {nb, nb, rb, rb, nb}, 
 											 {nb, rb, rb, nb, nb},
 											 {nb, nb, nb, nb, nb}}};
 
-	tmp_orientation2 =					   {{{nb, nb, nb, nb, nb},
+	tmp_orientation3 =					   {{{nb, nb, nb, nb, nb},
 											 {nb, rb, nb, nb, nb},
 											 {nb, rb, rb, nb, nb}, 
 											 {nb, nb, rb, nb, nb},
 											 {nb, nb, nb, nb, nb}}};
 
-	tmp_orientation3 =					   {{{nb, nb, nb, nb, nb},
+	tmp_orientation2 =					   {{{nb, nb, nb, nb, nb},
 											 {nb, nb, rb, rb, nb},
 											 {nb, rb, rb, nb, nb}, 
 											 {nb, nb, nb, nb, nb},
 											 {nb, nb, nb, nb, nb}}};
 
-	tmp_orientation4 =					   {{{nb, nb, nb, nb, nb},
-											 {nb, nb, nb, nb, nb},
-											 {nb, rb, rb, nb, nb}, 
-											 {nb, nb, rb, rb, nb},
+	tmp_orientation1 =					   {{{nb, nb, nb, nb, nb},
+											 {nb, nb, rb, nb, nb},
+											 {nb, nb, rb, rb, nb}, 
+											 {nb, nb, nb, rb, nb},
 											 {nb, nb, nb, nb, nb}}};
     
 	this->S_tetramino = {{{tmp_orientation1, tmp_orientation2, tmp_orientation3, tmp_orientation4}}, 0, {5, 0}};
 
-	tmp_orientation1 =					   {{{nb, nb, nb, nb, nb},
+	tmp_orientation4 =					   {{{nb, nb, nb, nb, nb},
 											 {nb, nb, nb, nb, nb},
 											 {nb, gb, gb, gb, nb}, 
 											 {nb, nb, gb, nb, nb},
 											 {nb, nb, nb, nb, nb}}};
 
-	tmp_orientation2 =					   {{{nb, nb, nb, nb, nb},
+	tmp_orientation3 =					   {{{nb, nb, nb, nb, nb},
 											 {nb, nb, gb, nb, nb},
 											 {nb, gb, gb, nb, nb}, 
 											 {nb, nb, gb, nb, nb},
 											 {nb, nb, nb, nb, nb}}};
 
-	tmp_orientation3 =					   {{{nb, nb, nb, nb, nb},
+	tmp_orientation2 =					   {{{nb, nb, nb, nb, nb},
 											 {nb, nb, gb, nb, nb},
 											 {nb, gb, gb, gb, nb}, 
 											 {nb, nb, nb, nb, nb},
 											 {nb, nb, nb, nb, nb}}};
 
-	tmp_orientation4 =					   {{{nb, nb, nb, nb, nb},
+	tmp_orientation1 =					   {{{nb, nb, nb, nb, nb},
 											 {nb, nb, gb, nb, nb},
 											 {nb, nb, gb, gb, nb}, 
 											 {nb, nb, gb, nb, nb},
@@ -179,6 +212,148 @@ BrickGameLG(Renderer *renderer, KeyboardHandler *kbdhandl, uint64_t brick_size, 
 BrickGameLG::
 ~BrickGameLG() {
     was_created = false;
+}
+
+void BrickGameLG::
+next_level() {
+	current_level++;
+	tick_time -= tick_time_change;
+}
+
+#include <SDL2/SDL.h>
+void BrickGameLG::
+draw_level() {
+	renderer->drawLine(
+	{field_pos[_x], field_pos[_y]}, 
+	{field_pos[_x], (field_size[_y]) * brick_size + field_pos[_y]}, clr_white);
+	
+	/* Level */
+	
+	SDL_Surface *text_surface = TTF_RenderText_Blended(font, (std::string("Level:") 
+	+ std::to_string(current_level)).c_str(),
+	 {255, 255, 255, 255});
+	
+	if(text_surface == NULL) {
+		printf("Error: cannot create surface from text: %s\n", TTF_GetError());
+		exit(-1);
+	}
+
+	SDL_Texture *text_texture = SDL_CreateTextureFromSurface(renderer->getSDLRenderer(), text_surface);
+
+	if(text_texture == NULL) {
+		printf("Error: cannot create texture from surface: %s\n", TTF_GetError());
+		exit(-1);
+	}
+	
+	const uint64_t font_vertical_spacing = 8;
+	
+
+	SDL_Rect dest_rect;
+	dest_rect.x = 0;
+	dest_rect.y = field_pos[_y];
+	dest_rect.h = text_surface->h;
+	dest_rect.w = text_surface->w;
+	
+	renderer->drawTexture(text_texture, NULL, &dest_rect);
+	
+	uint64_t first_surface_h = text_surface->h;
+	
+	text_surface = NULL;
+	text_texture = NULL;
+	
+	/* Score */
+	text_surface = TTF_RenderText_Blended(font, (std::string("Score:") 
+	+ std::to_string(score)).c_str(), {255, 255, 255, 255});
+
+	text_texture = SDL_CreateTextureFromSurface(renderer->getSDLRenderer(), text_surface);
+
+	if(text_texture == NULL) {
+		printf("Error: cannot create texture from surface: %s\n", TTF_GetError());
+		exit(-1);
+	}
+	
+	dest_rect.x = 0;
+	dest_rect.y += first_surface_h + font_vertical_spacing;
+	dest_rect.h = text_surface->h;
+	dest_rect.w = text_surface->w;
+
+
+	renderer->drawTexture(text_texture, NULL, &dest_rect);
+
+}
+
+void BrickGameLG::
+check_tetramino_orientation(TetraminoOrientation tetramino_orientation) {
+    uint64_t yvectr_size = tetramino_orientation.map[0].size();
+    for(auto yvectr = tetramino_orientation.map.begin(); 
+        yvectr < tetramino_orientation.map.end();
+        yvectr++) {
+        if(yvectr->size() != yvectr_size) {
+            printf("Error: unmatching sizes of y vectors\n");
+            printf("| This probably happend because of different sizes of y");
+            printf("in tetramino.\n");
+            printf("|>Please make sure that the y sizes of tetramino are all the same\n");
+            exit(-1);
+        }
+    }
+
+}
+
+void BrickGameLG::
+rotate_current_tetramino() {
+    if(!is_current_tetramino_able_to_rotate()) {
+        return;
+    }
+    cut_current_tetramino();
+    if(current_tetramino.current_orientation < current_tetramino.orientations.size() - 1) {
+        current_tetramino.current_orientation++;
+    }else {
+        current_tetramino.current_orientation = 0;
+    }
+    spawn_current_tetramino();
+}
+
+bool BrickGameLG::
+is_current_tetramino_able_to_rotate() {
+    uint64_t next_orientation_n = 0;
+    if(current_tetramino.current_orientation < current_tetramino.orientations.size() - 1) {
+        next_orientation_n = current_tetramino.current_orientation + 1;
+    }
+    TetraminoOrientation next_orientation = current_tetramino
+        .orientations[next_orientation_n];
+    TetraminoOrientation current_orientation = current_tetramino.
+        orientations[current_tetramino.current_orientation];
+    
+    check_tetramino_orientation(next_orientation);
+    check_tetramino_orientation(current_orientation);
+    
+    for(uint64_t x = 0; x < next_orientation.map.size(); x++) {
+        for(uint64_t y = 0; y < next_orientation.map[0].size(); y++) {
+            ivec2 absolute_pos = current_tetramino.pos + uvec2({x,y});
+            if((absolute_pos[_x] >= (int64_t)field_size[_x]
+               || absolute_pos[_y] >= (int64_t)field_size[_y]) && next_orientation.map[x][y].type == brick) {
+                return false;
+            }
+            if((absolute_pos[_x] < 0
+               || absolute_pos[_y] < 0) && next_orientation.map[x][y].type == brick) {
+                return false;
+            }
+            if((absolute_pos[_x] < 0) || (absolute_pos[_y] < 0)
+               || (absolute_pos[_x] > (int64_t)field_size[_x] - 1) 
+               || (absolute_pos[_y] > (int64_t)field_size[_y])) {
+                continue;
+            }
+            //FIXME: Segmentation fault below
+            if(field[absolute_pos[_x]][absolute_pos[_y]].type == brick) {
+                if(current_orientation.map[x][y].type != brick) {
+                    if(next_orientation.map[x][y].type == brick) {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    return true;
 }
 
 bool BrickGameLG::
@@ -214,6 +389,37 @@ is_brick_able_to_move(uvec2 pos, Direction d) {
     return true;
 }
 
+bool BrickGameLG::
+is_row_filled(uint64_t row) {
+    for(uint64_t col = 0; col < field_size[_x]; col++) {
+        if(field[col][row].type != brick) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void BrickGameLG::
+cut_row(uint64_t row) {
+    for(uint64_t col = 0; col < field_size[_x]; col++) {
+        field[col][row] = {clr_black, nothing};
+    }
+}
+
+void BrickGameLG::
+check_rows() {
+    for(uint64_t row = 0; row < field_size[_y]; row++) {
+        if(is_row_filled(row)) {
+            cut_row(row);
+            apply_gravity_for_all_above(row);
+			score += score_per_row;
+			if(score >= score_per_level * (current_level + 1)) {
+				next_level();
+			}
+        }
+    }
+}
+
 void BrickGameLG::
 drawBrick(BrickGameBrick brick, uvec2 pos) {
     renderer->drawRect(pos, {brick_size, brick_size}, brick.clr, 1);
@@ -221,38 +427,28 @@ drawBrick(BrickGameBrick brick, uvec2 pos) {
 
 void BrickGameLG::
 apply_gravity(uvec2 brick_pos) {
-    if(brick_pos[_x] > field_size[_x] - 1 || brick_pos[_y] > field_size[_y] - 1) return;
-    if(brick_pos[_y] == field_size[_y] - 1) return;
-
-	BrickGameBrick &currentBrick = (field[brick_pos[_x]][brick_pos[_y]]);
-	BrickGameBrick &nextBrick = (field[brick_pos[_x]][brick_pos[_y] + 1]);
-
-    if(currentBrick.type == nothing) return;
-//    printf("In the %s, %d mark passed\n", __func__, 2);
-    if(nextBrick.type != nothing) return;
-//    printf("In the %s, %d mark passed; GRAVITY WILL BE APPLIED\n", __func__, 3);
-    
+	if(!is_brick_able_to_move(brick_pos, down)) return;
 
     field[brick_pos[_x]][brick_pos[_y] + 1] = field[brick_pos[_x]][brick_pos[_y]];
     field[brick_pos[_x]][brick_pos[_y]] = {clr_black, nothing};
 }
 
+
 void BrickGameLG::
 apply_gravity_for_all() {
-    uvec2 brick_pos = field_size - uvec2({1, 1});
-    for(auto ptr1 = field.end(); ptr1 > field.begin(); ptr1--) {
-        for(auto ptr2 = ptr1->end(); ptr2 > ptr1->begin(); ptr2--) {
-
-            apply_gravity(brick_pos);
-            
-            if(brick_pos[_y]) brick_pos[_y]--;
-            else break;
+    for(uint64_t xptr = 0; xptr < field_size[_x]; xptr++) {
+        for(uint64_t yptr = field_size[_y]; yptr > 0; yptr--) {
+            apply_gravity({xptr, yptr});
         }
-        if(brick_pos[_x]) { 
-			brick_pos[_x]--; 
-            brick_pos[_y] = field_size[_y] - 1;
-		}
-        else break;
+    }
+}
+
+void BrickGameLG::
+apply_gravity_for_all_above(uint64_t row) {
+    for(uint64_t xptr = 0; xptr < field_size[_x]; xptr++) {
+        for(uint64_t yptr = row; yptr > 0; yptr--) {
+            apply_gravity({xptr, yptr});
+        }
     }
 }
 
@@ -261,7 +457,7 @@ create_field(uvec2 field_pos, uvec2 field_size) {
     this->field_pos = field_pos;
     this->field_size = field_size;
     
-    //create everything needed
+    /* create everything needed */
     for(uint64_t vecdx = 0; vecdx < field_size[_x]; vecdx++) {
 		field.push_back(std::vector<BrickGameBrick>());
 		for(uint64_t vecdy = 0; vecdy < field_size[_y]; vecdy++) {
@@ -276,13 +472,14 @@ update() {
     uint64_t brick_posy = 0;
     for(auto ptr1 = field.begin(); ptr1 < field.end(); ptr1++) {
         for(auto ptr2 = ptr1->begin(); ptr2 < ptr1->end(); ptr2++) {
-	    	uvec2 real_pos = {(brick_posx) * brick_size + field_pos[_x], (brick_posy) * brick_size + field_pos[_x]};
+	    	uvec2 real_pos = {(brick_posx) * brick_size + field_pos[_x], (brick_posy) * brick_size + field_pos[_y]};
             drawBrick({ptr2->clr, ptr2->type}, real_pos);
 	    	brick_posy++;
         }
 		brick_posx++;
         brick_posy = 0;
     }
+	draw_level();
 }
 
 void BrickGameLG::
@@ -307,12 +504,11 @@ handle_input() {
 
             if(is_current_tetramino_able_to_move(down))
                 move_current_tetramino(down);
-            /* OR */ 
-            // tick();
         }
         else if(kbdhandl->isPressed(SDLK_UP)
                 || kbdhandl->isPressed(SDLK_k)) {
-
+            //add check
+            rotate_current_tetramino();
         }
         can_input = false;
     }
@@ -378,107 +574,91 @@ is_current_tetramino_able_to_move(Direction d) {
     
     TetraminoOrientation tetramino = current_tetramino.
         orientations[current_tetramino.current_orientation];
-    uint64_t yvectr_size = tetramino.map[0].size();
-    for(auto yvectr = tetramino.map.begin(); 
-        yvectr < tetramino.map.end();
-        yvectr++) {
-        if(yvectr->size() != yvectr_size) {
-            printf("Error: unmatching sizes of y vectors\n");
-            printf("| In function `%s`\n", __func__);
-            printf("| This probably happend because of different sizes of y");
-            printf("in tetramino.\n");
-            printf("|>Please make sure that the y sizes of tetramino are all the same\n");
-            exit(-1);
-        }
-    }
+    uvec2 tetramino_size = {tetramino.map.size(), tetramino.map[0].size()};
+    check_tetramino_orientation(tetramino);
 
 
 	switch(d) {
         case up: 
-            return [](BrickGameLG *lg) -> bool{
-                TetraminoOrientation tetramino = lg->current_tetramino.
-						orientations[lg->current_tetramino.current_orientation];
-                uvec2 tetramino_size = {tetramino.map.size(), tetramino.map[0].size()};
-				uvec2 uppest_brick = {4, 4};
+            return [&]() -> bool{
                 for(uint64_t xptr = 0; xptr < tetramino_size[_x]; xptr++) {
+                    uvec2 uppest_y_brick = tetramino_size - uvec2({1, 1});
+					bool row_has_bricks = false;
                 	for(uint64_t yptr = 0; yptr < tetramino_size[_y]; yptr++) {
 						if(tetramino.map[xptr][yptr].type == brick) {
-                            if(uppest_brick[_y] > yptr) {
-                                /* New uppest brick */
-                                uppest_brick = {xptr, yptr};
-							}
+							row_has_bricks = true;
+                            if(yptr < uppest_y_brick[_y]) {
+                                uppest_y_brick = {xptr, yptr};
+                            }
 						}
 					}
+                    if(row_has_bricks && !is_brick_able_to_move(uppest_y_brick + current_tetramino.pos, down)) {
+                        return false;
+                    }
 				}
-                return lg->is_brick_able_to_move(
-                           uppest_brick + lg->current_tetramino.pos,
-                           up);
-			}(this);
+                return true;
+			}();
 			break;
 		case right: 
-            return [](BrickGameLG *lg){
-                TetraminoOrientation tetramino = lg->current_tetramino.
-						orientations[lg->current_tetramino.current_orientation];
-                uvec2 tetramino_size = {tetramino.map.size(), tetramino.map[0].size()};
-				uvec2 rightest_brick = {0, 0};
-                for(uint64_t xptr = 0; xptr < tetramino_size[_x]; xptr++) {
-                	for(uint64_t yptr = 0; yptr < tetramino_size[_y]; yptr++) {
+            return [&](){
+                for(uint64_t yptr = 0; yptr < tetramino_size[_y]; yptr++) {
+					uvec2 rightest_x_brick = {0, 0};
+					bool col_has_bricks = false;
+                	for(uint64_t xptr = 0; xptr < tetramino_size[_x]; xptr++) {
 						if(tetramino.map[xptr][yptr].type == brick) {
-                            if(rightest_brick[_x] < xptr) {
-                                /* New rightest brick */
-                                rightest_brick = {xptr, yptr};
+							col_has_bricks = true;
+                            if(xptr > rightest_x_brick[_x]) {
+                                rightest_x_brick = {xptr, yptr};
 							}
 						}
 					}
+					if(col_has_bricks && !is_brick_able_to_move(rightest_x_brick + current_tetramino.pos, right)) {
+						return false;
+					}
 				}
-                return lg->is_brick_able_to_move(
-                           rightest_brick + lg->current_tetramino.pos,
-                           right);
-			}(this);
+				return true;
+			}();
 			break;
 		case left: 
-            return [](BrickGameLG *lg){
-                TetraminoOrientation tetramino = lg->current_tetramino
-					.orientations[lg->current_tetramino.current_orientation];
-                uvec2 tetramino_size = {tetramino.map.size(), tetramino.map[0].size()};
-				uvec2 leftest_brick = {4, 4};
-                for(uint64_t xptr = 0; xptr < tetramino_size[_x]; xptr++) {
-                	for(uint64_t yptr = 0; yptr < tetramino_size[_y]; yptr++) {
+            return [&](){
+                for(uint64_t yptr = 0; yptr < tetramino_size[_y]; yptr++) {
+					uvec2 leftest_x_brick = tetramino_size - uvec2({1, 1});
+					bool col_has_bricks = false;
+                	for(uint64_t xptr = 0; xptr < tetramino_size[_x]; xptr++) {
 						if(tetramino.map[xptr][yptr].type == brick) {
-                            if(leftest_brick[_x] > xptr) {
-                                /* New leftest brick */
-                                leftest_brick = {xptr, yptr};
+							col_has_bricks = true;
+                            if(xptr < leftest_x_brick[_x]) {
+                                leftest_x_brick = {xptr, yptr};
 							}
 						}
 					}
+					if(col_has_bricks && !is_brick_able_to_move(leftest_x_brick + current_tetramino.pos, left)) {
+						return false;
+					}
 				}
-                return lg->is_brick_able_to_move(
-                           leftest_brick + lg->current_tetramino.pos,
-                           left);
-			}(this);
+				return true;
+			}();
     
 			break;
 		case down: 
-            return [](BrickGameLG *lg) -> bool{
-                TetraminoOrientation tetramino = lg->current_tetramino
-					.orientations[lg->current_tetramino.current_orientation];
-                uvec2 tetramino_size = {tetramino.map.size(), tetramino.map[0].size()};
-				uvec2 lowest_brick = {0, 0};
-                
+            return [&]() -> bool{
                 for(uint64_t xptr = 0; xptr < tetramino_size[_x]; xptr++) {
+                    uvec2 lowest_y_brick = {0, 0};
+					bool row_has_bricks = false;
                 	for(uint64_t yptr = 0; yptr < tetramino_size[_y]; yptr++) {
 						if(tetramino.map[xptr][yptr].type == brick) {
-                            if(yptr > lowest_brick[_y]) {
-                                /* New lowest brick */
-                                lowest_brick = {xptr, yptr};
-							}
+							row_has_bricks = true;
+                            if(yptr > lowest_y_brick[_y]) {
+                                lowest_y_brick = {xptr, yptr};
+                            }
 						}
 					}
+                    if(row_has_bricks && !is_brick_able_to_move(lowest_y_brick + current_tetramino.pos, down)) {
+                        return false;
+                    }
 				}
-                return lg->is_brick_able_to_move(
-                           lowest_brick + lg->current_tetramino.pos,
-                           down);
-			}(this);
+                return true;
+			}();
 			break;
 	}
 
@@ -499,11 +679,13 @@ start() {
 
 void BrickGameLG::
 cut_current_tetramino() {
-    for(uint64_t xptr = 0; xptr < 5; xptr++) {
-        for(uint64_t yptr = 0; yptr < 5; yptr++) {
-            if((current_tetramino
-					.orientations[current_tetramino.current_orientation])
-					.map[xptr][yptr].type == brick) {
+    TetraminoOrientation current_tetramino_orientation 
+        = current_tetramino.orientations[current_tetramino.current_orientation]; 
+    check_tetramino_orientation(current_tetramino_orientation);
+
+    for(uint64_t xptr = 0; xptr < current_tetramino_orientation.map.size(); xptr++) {
+        for(uint64_t yptr = 0; yptr < current_tetramino_orientation.map[0].size(); yptr++) {
+            if(current_tetramino_orientation.map[xptr][yptr].type == brick) {
                 /* Brick position in the field */
                 uvec2 absolute_brick_pos = current_tetramino.pos + uvec2({xptr, yptr});
                 field[absolute_brick_pos[_x]][absolute_brick_pos[_y]] = {clr_black, nothing};
@@ -514,8 +696,11 @@ cut_current_tetramino() {
 
 void BrickGameLG::
 spawn_current_tetramino() {
-    for(uint64_t xptr = 0; xptr < 5; xptr++) {
-        for(uint64_t yptr = 0; yptr < 5; yptr++) {
+    TetraminoOrientation current_tetramino_orientation 
+        = current_tetramino.orientations[current_tetramino.current_orientation]; 
+    check_tetramino_orientation(current_tetramino_orientation);
+    for(uint64_t xptr = 0; xptr < current_tetramino_orientation.map.size(); xptr++) {
+        for(uint64_t yptr = 0; yptr < current_tetramino_orientation.map[0].size(); yptr++) {
             if((current_tetramino
 					.orientations[current_tetramino.current_orientation])
 					.map[xptr][yptr].type == brick) {
@@ -572,6 +757,7 @@ tick() {
         move_current_tetramino(down);
     }
     else {
+		check_rows();
         generate_current_tetramino();
         spawn_current_tetramino();
     }
