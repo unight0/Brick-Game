@@ -4,11 +4,11 @@
 
 CC = g++
 CL = g++
-C_OPT = -O2 -Wall -Wpedantic -Wextra
-L_OPT = -lSDL2_image `sdl2-config --libs`
+C_OPT = -Og -g -Wall -Wpedantic -Wextra
+L_OPT = -lSDL2_image -lSDL2_ttf `sdl2-config --libs`
 C_OBJS = *.cpp
 L_OBJS = *.o
-R_OBJ = app
+R_OBJ = brick-game 
 
 BIN_DIR = bin
 SRC_DIR = src
