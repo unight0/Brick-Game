@@ -5,7 +5,7 @@
 CC = g++
 CL = g++
 C_OPT = -Og -g -Wall -Wpedantic -Wextra
-L_OPT = -lSDL2_image -lSDL2_ttf `sdl2-config --libs`
+L_OPT = -lSDL2_ttf `sdl2-config --libs`
 C_OBJS = *.cpp
 L_OBJS = *.o
 R_OBJ = brick-game 
