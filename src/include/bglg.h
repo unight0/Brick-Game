@@ -1,9 +1,3 @@
-/** 
-  * @file bglg.h
-  * @author Peter Sukhov
-  * @version 1.0
-*/
-
 #ifndef INCLUDE_BGLG_H
 #define INCLUDE_BGLG_H
 
@@ -13,6 +7,7 @@
 #include "vec.h"
 #include <vector>
 #include <chrono>
+#include <SDL2/SDL_ttf.h>
 
 enum BrickGameBrickType {
     nothing = 0,
@@ -34,7 +29,8 @@ struct TetraminoOrientation {
 struct Tetramino {
 	std::vector<TetraminoOrientation> orientations;
     uint64_t current_orientation;
-	uvec2 pos;
+    // ivec bc tetramino pos might be -1 or -2 
+	ivec2 pos;
 };
 
 enum Direction {
@@ -51,13 +47,20 @@ class BrickGameLG
 private:
     Renderer *renderer;
     KeyboardHandler *kbdhandl;
-
+	TTF_Font *font;
+	
+	uint64_t score;
+	uint64_t score_per_level;
+	uint64_t score_per_row;
+	uint64_t current_level;
     uint64_t brick_size;
     uvec2 field_pos;
     uvec2 field_size;
     std::vector<std::vector<BrickGameBrick>> field;
     std::chrono::duration<double> tick_time;
+    std::chrono::duration<double> tick_time_change;
     std::chrono::system_clock::time_point last_tick;
+	
     
     
 	Tetramino stick_tetramino;
@@ -89,6 +92,10 @@ private:
     
     /** Applies gravity for every brick in the field */
     void apply_gravity_for_all();
+	
+	/** Applies gravity for every brick in every row above specified row
+	  * @param row -- apply gravity for each above that row */
+	void apply_gravity_for_all_above(uint64_t row);
     
     /** Makes Renderer to draw brick at pos 
       * @param brick - brick to draw
@@ -119,7 +126,27 @@ private:
       * @param d - direction 
       * @return bool */
     bool is_current_tetramino_able_to_move(Direction d);
-
+    
+    /** Checks if row is filled with bricks
+      * @param row - row to check
+      * @return bool */
+    bool is_row_filled(uint64_t row);
+    
+    /** Cuts row from field 
+      * @param row - row to cut*/
+    void cut_row(uint64_t row);
+    
+    /** Checks all the rows if they are filled, if true -- cuts them */
+    void check_rows();
+    
+    /** Checks if all tetramino orientation's yvectrs sizes are the same
+      * @param TetraminoOrientation orintation -- orientation to check */
+    void check_tetramino_orientation(TetraminoOrientation tetramino_orientation);
+	
+	/** Pushes game onto the next level */
+	void next_level();
+	
+	void draw_level();
 public:
     class MoreThenOneObjectExists{};
 
@@ -129,9 +156,28 @@ public:
     
     /** Handles input */
     void handle_input();
-
     
-    BrickGameLG(Renderer *renderer, KeyboardHandler *kbdhandl, uint64_t brick_size, uvec2 field_offset, uvec2 field_size, std::chrono::duration<double> tick_time);
+
+    bool is_current_tetramino_able_to_rotate();
+    void rotate_current_tetramino();
+	
+	/** Constructor 
+	  * @param Renderer *renderer -- display renderer
+	  * @param TTF_Font *font -- ttf font to print info with
+	  * @param KeyboardHandler *kbdhandl -- keyboard handler
+	  * @param uint64_t brick_size -- brick size in pixels
+	  * @param uvec2 field_offset -- brick game field offset on screen in pixels
+	  * @param uvec2 field_size -- brick game field size in bicks
+	  * @param double tick_time -- time between ticks in seconds 
+	  * @param double tick_time_change -- how time between changes between levels 
+	  * @param uint64_t score_per_level -- amount of score that is nedded for each level 
+	  * @param uint64_t score_per_row -- amount of score that is filling one row gives*/
+    BrickGameLG(Renderer *renderer, TTF_Font *font,
+	KeyboardHandler *kbdhandl, uint64_t brick_size, uvec2 field_offset, 
+	uvec2 field_size, double tick_time, double tick_time_change, uint64_t score_per_level,
+	uint64_t score_per_row);
+
+	/** Destructor */
     ~BrickGameLG();
 
     /** Necessary to run the game */

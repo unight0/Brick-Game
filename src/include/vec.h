@@ -20,25 +20,75 @@ template <typename T, uint8_t D>
 struct vec {
 public:
     T coords[D];
+
+    /** Get reference to dimens dimension
+      * @param VectorDimensions dimens -- dimension to get 
+      * @return T& -- reference to dimension */
     T &operator[](VectorDimensions dimens);
+
+    /** Get reference to dimens dimension
+      * @param uint8_t dimens -- dimension to get 
+      * @return T& -- reference to dimension */
     T &operator[](uint8_t dimens);
+    
+    /** Sets value of this vector to v vector
+      * @param vec<T,D> v -- vector to set this vector to 
+      * @return vec<T,D> -- value for chain equality like this:
+      * v1 = v2 = v3 = v4... = vN*/
     vec<T, D> operator=(vec<T, D> v);
+    
+    /** Sums two vectors: this and v
+      * @param vec<T,D> v -- vector to sum with this vector 
+      * @return vec<T,D> -- sum of this and v */
     vec<T, D> operator+(vec<T, D> v);
+    
+    /** Substracts two vectors: this and v
+      * @param vec<T,D> v -- vector to be substracted from this vector
+      * @return vec<T,D> -- sub of this vector and v*/
     vec<T, D> operator-(vec<T, D> v);
+    
+    /** Sums two vectors: this and v and writes result to this
+      * @param vec<T,D> v -- vector to sum with this vector
+      * @return reference to this because of what you would
+      * expect from this expression: `(v1 += v2) = v3`*/
     vec<T, D> &operator+=(vec<T, D> v);
+
+    /** Substracts two vectors: this and v and writes result to this
+      * @param vec<T,D> v -- vector to substract with this vector
+      * @return reference to this because of what you would
+      * expect from this expression: `(v1 -= v2) = v3`*/
     vec<T, D> &operator-=(vec<T, D> v);
+    
+    /** Tests equality of two vectors: this and v
+      * @param vec<T,D> b -- vector to test equality to
+      * @return bool result */
     bool operator==(vec<T, D> v);
+
+    /** Tests unequality of two vectors: this and v
+      * @param vec<T,D> b -- vector to test equality to
+      * @return bool result */
     bool operator!=(vec<T, D> v);
 
+    /** Constructors */
     template <typename T1, uint8_t D1>
     vec(const vec<T1, D1> &v);
+
     vec(const vec<T, D> &v);
-//    template <typename ...T1>
-//    vec(T1&&...t);
     vec(T arr[D]);
     vec(std::initializer_list<T> lst);
     vec();
 };
+
+
+typedef vec<float, 2> fvec2;
+typedef vec<int64_t, 2> ivec2;
+typedef vec<uint64_t, 2> uvec2;
+typedef vec<float, 3> fvec3;
+typedef vec<int64_t, 3> ivec3;
+typedef vec<uint64_t, 3> uvec3;
+typedef vec<float, 4> fvec4;
+typedef vec<int64_t, 4> ivec4;
+typedef vec<uint64_t, 4> uvec4;
 
 
 /* Definition goes down below */
@@ -122,6 +172,7 @@ operator!=(vec<T, D> v) {
     return !(*this == v);
 }
 
+
 template <typename T, uint8_t D>
 vec<T, D>::
 vec() {
@@ -174,28 +225,5 @@ vec(std::initializer_list<T> lst) {
     assert(lst.size() <= D); // if not, abort
     std::copy(lst.begin(), lst.end(), coords);
 }
-
-/*
-// taken from https://stackoverflow.com/questions/4118025/brace-enclosed-initializer-list-constructor
-// and not used :)
-template <typename T, uint8_t D>
-template <typename ...T1>
-vec<T, D>::
-vec(T1&&...t){
-
-    coords = {std::forward<T1>(t)...};
-}*/
-
-
-
-typedef vec<float, 2> fvec2;
-typedef vec<int64_t, 2> ivec2;
-typedef vec<uint64_t, 2> uvec2;
-typedef vec<float, 3> fvec3;
-typedef vec<int64_t, 3> ivec3;
-typedef vec<uint64_t, 3> uvec3;
-typedef vec<float, 4> fvec4;
-typedef vec<int64_t, 4> ivec4;
-typedef vec<uint64_t, 4> uvec4;
 
 #endif
