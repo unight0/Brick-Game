@@ -3,7 +3,8 @@ This is my version of Brick Game.
 Pet project.
 
 ## Screenshots
-![Brick Games gameplay](https://github.com/unight0/Brick-Game/blob/main/brick-game-screenshot.png)
+![](https://github.com/unight0/Brick-Game/blob/main/brick-game-screenshot.png)
+![](https://github.com/unight0/Brick-Game/blob/main/brick-game-screenshot2.png)
 
 ## Dependencies
 Please install following development libraries
