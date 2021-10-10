@@ -24,5 +24,5 @@ make
 Then you can use command `make run` to run Brick Game or just type in `./brick-game`
 
 ## Font
-Font that is being used in this project is ![CascadiaCode]<https://github.com/microsoft/cascadia-code>.
+Font that is being used in this project is [CascadiaCode](https://github.com/microsoft/cascadia-code).
 You can use your font instead of Cascadia Code. Just copy ttf font executable directory under 'font.ttf' name
