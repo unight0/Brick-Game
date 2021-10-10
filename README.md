@@ -6,6 +6,11 @@ Pet project.
 ![](https://github.com/unight0/Brick-Game/blob/main/brick-game-screenshot.png)
 ![](https://github.com/unight0/Brick-Game/blob/main/brick-game-screenshot2.png)
 
+## Controls
+Move falling tetramino with arrow keys or HJKL keys.
+Rotate falling tetramino with up arrow key or with K key.
+Press space to drop falling tetramino immediately.
+
 ## Dependencies
 Please install following development libraries
 - SDL2
