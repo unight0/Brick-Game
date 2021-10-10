@@ -17,6 +17,7 @@ Please install following development libraries
 - SDL2 TTF
 
 ## Installation
+Create 'bin' directory.
 Use provided Makefile to compile this program.
 ```bash
 make
