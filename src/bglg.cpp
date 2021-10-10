@@ -7,7 +7,7 @@ BrickGameLG::
 BrickGameLG(Renderer *renderer, TTF_Font *font,
 KeyboardHandler *kbdhandl, uint64_t brick_size,
 uvec2 field_offset, uvec2 field_size, double tick_time, double tick_time_change,
-uint64_t score_per_level, uint64_t score_per_row) {
+uint64_t score_per_level, uint64_t score_per_row, uint64_t score_per_instant_fall) {
     
    	if(this->was_created) {
         throw MoreThenOneObjectExists();
@@ -21,6 +21,7 @@ uint64_t score_per_level, uint64_t score_per_row) {
     this->tick_time_change = std::chrono::duration<double>(tick_time_change);
 	this->score_per_level = score_per_level;
 	this->score_per_row = score_per_row;
+	this->score_per_instant_fall = score_per_instant_fall;
 	score = 0;
 	current_level = 0;
     was_created = true;
@@ -507,8 +508,15 @@ handle_input() {
         }
         else if(kbdhandl->isPressed(SDLK_UP)
                 || kbdhandl->isPressed(SDLK_k)) {
-            //add check
-            rotate_current_tetramino();
+			if(is_current_tetramino_able_to_rotate())
+	            rotate_current_tetramino();
+        }
+        else if(kbdhandl->isPressed(SDLK_SPACE)) {
+			while(is_current_tetramino_able_to_move(down)) {
+				move_current_tetramino(down);
+			}
+			tick();
+			score += score_per_instant_fall;
         }
         can_input = false;
     }
@@ -517,7 +525,8 @@ handle_input() {
     if(kbdhandl->isReleased(SDLK_RIGHT) && kbdhandl->isReleased(SDLK_LEFT)
        && kbdhandl->isReleased(SDLK_DOWN) && kbdhandl->isReleased(SDLK_UP) 
        && kbdhandl->isReleased(SDLK_h) && kbdhandl->isReleased(SDLK_j)
-       && kbdhandl->isReleased(SDLK_l) && kbdhandl->isReleased(SDLK_k)) {
+       && kbdhandl->isReleased(SDLK_l) && kbdhandl->isReleased(SDLK_k)
+       && kbdhandl->isReleased(SDLK_SPACE)) {
         can_input = true;
     }
 }
@@ -718,7 +727,7 @@ spawn_current_tetramino() {
 
 void BrickGameLG::
 generate_current_tetramino() {
-    auto NES_random = []()->uint16_t {
+    auto NES_random = []() -> uint16_t {
         /* Initial seed */
         srand(time(NULL));
         static uint16_t seed = /*8988*/ rand();
@@ -742,6 +751,14 @@ generate_current_tetramino() {
 	Tetramino tetraminos[7] = {stick_tetramino, L_r_tetramino,
 								L_l_tetramino, block_tetramino,
 								S_tetramino, T_tetramino, Z_tetramino};
+	
+
+//	if(next_tetramino.orientations.size() == 0) {
+//		generate_tetramino();
+//	}
+	
+//    next_tetramino = tetraminos[tetramino_index];
+//	current_tetramino = next_tetramino;
     current_tetramino = tetraminos[tetramino_index];
 }
 
