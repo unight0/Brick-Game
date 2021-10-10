@@ -52,6 +52,7 @@ private:
 	uint64_t score;
 	uint64_t score_per_level;
 	uint64_t score_per_row;
+	uint64_t score_per_instant_fall;
 	uint64_t current_level;
     uint64_t brick_size;
     uvec2 field_pos;
@@ -171,11 +172,13 @@ public:
 	  * @param double tick_time -- time between ticks in seconds 
 	  * @param double tick_time_change -- how time between changes between levels 
 	  * @param uint64_t score_per_level -- amount of score that is nedded for each level 
-	  * @param uint64_t score_per_row -- amount of score that is filling one row gives*/
+	  * @param uint64_t score_per_row -- amount of score that is filling one row gives
+	  * @parma uint64_t score_per_instant_fall -- amount of score to add if player
+	  * pressed SPACE and makes tetramino instantly fall */
     BrickGameLG(Renderer *renderer, TTF_Font *font,
 	KeyboardHandler *kbdhandl, uint64_t brick_size, uvec2 field_offset, 
 	uvec2 field_size, double tick_time, double tick_time_change, uint64_t score_per_level,
-	uint64_t score_per_row);
+	uint64_t score_per_row, uint64_t score_per_instant_fall);
 
 	/** Destructor */
     ~BrickGameLG();

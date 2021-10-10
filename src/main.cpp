@@ -18,7 +18,7 @@ int main() {
 
     BrickGameLG bglg(&renderer, font,
 	&kbdhandl, brick_size, {8 * brick_size, 0}, {10, 21},
-	1.0, 0.05, 10000, 1000);
+	1.0, 0.05, 10000, 1000, 10);
     
     renderer.openWindow("Brick Game", (10 * brick_size + 8 * brick_size),
 	 21 * brick_size, 0, 0);
