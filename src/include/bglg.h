@@ -80,6 +80,9 @@ private:
     
     /** Indicates if key was released */
     bool can_input;
+
+    /** Game over */
+    bool game_over;
     
 
     /** Generates field at field_pos with field_size 
@@ -195,6 +198,9 @@ public:
 
     /** Draw field screen */
     void update();
+
+    /** Is game over? */
+    bool is_game_over();
 };
 
 #endif

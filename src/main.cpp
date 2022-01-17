@@ -25,8 +25,9 @@ int main() {
     
     bglg.start();
     
+    bool game_over = false;
     
-    while(true) { 
+    while(!game_over) { 
         SDL_Event event;
         while(SDL_PollEvent(&event)) {
             if(event.type == SDL_QUIT) {
@@ -48,7 +49,12 @@ int main() {
         
 
 		if(bglg.should_tick()) {
-			bglg.tick();	
+            if(bglg.is_game_over()) {
+                game_over = true;
+            }
+            else {
+			    bglg.tick();	
+            }
         }
         else {
             bglg.handle_input();
@@ -63,4 +69,41 @@ int main() {
 		//frames per second 
 		SDL_Delay(1000/60);
     }
+    /* Game over */
+    SDL_Surface *text_surface = TTF_RenderText_Blended(font, "Game over!", {255, 255, 255, 255});
+    if(text_surface == NULL) {
+        printf("Error creating surface from text: %s\n", TTF_GetError());
+        printf("Anyway, it is Game Over! Try again :)\n");
+        exit(-1);
+    }
+    SDL_Texture *text_texture = SDL_CreateTextureFromSurface(renderer.getSDLRenderer(), text_surface);
+    if(text_texture == NULL) {
+        printf("Error creating texture from surface: %s\n", SDL_GetError());
+        printf("Anyway, it is Game Over! Try again :)\n");
+        exit(-1);
+    }
+    renderer.clear(clr_black);
+    renderer.update();
+    SDL_Rect dest_rect = {0, 0, 0, 0};
+    dest_rect.w = text_surface->w;
+    dest_rect.h = text_surface->h;
+    renderer.drawTexture(text_texture, NULL, &dest_rect);
+    renderer.update();
+
+    /* Wait until key recieved */
+    SDL_Event event;
+    bool wait_key = true;
+    while(wait_key) {
+        while(SDL_PollEvent(&event)) {
+            if(event.type == SDL_KEYDOWN)
+                wait_key = false;
+        }
+    }
+    
+    SDL_DestroyTexture(text_texture);
+    SDL_FreeSurface(text_surface);
+
+	renderer.closeWindow();
+	TTF_CloseFont(font);
+	exit(0);
 }
