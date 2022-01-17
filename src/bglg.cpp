@@ -1,7 +1,7 @@
+#include <SDL2/SDL.h>
 #include "include/bglg.h"
 
 bool BrickGameLG::was_created = false;
-
 
 BrickGameLG::
 BrickGameLG(Renderer *renderer, TTF_Font *font,
@@ -22,6 +22,7 @@ uint64_t score_per_level, uint64_t score_per_row, uint64_t score_per_instant_fal
 	this->score_per_level = score_per_level;
 	this->score_per_row = score_per_row;
 	this->score_per_instant_fall = score_per_instant_fall;
+    this->game_over = false;
 	score = 0;
 	current_level = 0;
     was_created = true;
@@ -37,8 +38,8 @@ uint64_t score_per_level, uint64_t score_per_row, uint64_t score_per_instant_fal
     TetraminoOrientation tmp_orientation3;
     TetraminoOrientation tmp_orientation4;
     
-    /** Important: tetramino orientations must be reversed when adding
-      * when adding new tetramino. IDK why. */
+    /** Important: tetramino orientations order must be reversed when adding
+      * new tetramino. IDK why. */
 
 	tmp_orientation1 =                     {{{nb, nb, nb, nb, nb},
 											 {nb, nb, rb, nb, nb},
@@ -221,7 +222,6 @@ next_level() {
 	tick_time -= tick_time_change;
 }
 
-#include <SDL2/SDL.h>
 void BrickGameLG::
 draw_level() {
 	renderer->drawLine(
@@ -297,7 +297,6 @@ check_tetramino_orientation(TetraminoOrientation tetramino_orientation) {
             exit(-1);
         }
     }
-
 }
 
 void BrickGameLG::
@@ -344,7 +343,6 @@ is_current_tetramino_able_to_rotate() {
                || (absolute_pos[_y] > (int64_t)field_size[_y])) {
                 continue;
             }
-            //FIXME: Segmentation fault below
             if(field[absolute_pos[_x]][absolute_pos[_y]].type == brick) {
                 if(current_orientation.map[x][y].type != brick) {
                     if(next_orientation.map[x][y].type == brick) {
@@ -488,6 +486,7 @@ handle_input() {
     
     if(should_tick()) return;
 
+    /* Oh yeah, shitcode */
     if(can_input) {
         if(kbdhandl->isPressed(SDLK_RIGHT) 
            || kbdhandl->isPressed(SDLK_l)) {
@@ -671,7 +670,7 @@ is_current_tetramino_able_to_move(Direction d) {
 			break;
 	}
 
-    /* It should never get here */
+    /* Unreachable */
     printf("Something bad happend in `%s` function. It should never reached this point\n", __func__);
     printf("| Probably, this happend because of passing uninitialized or\n \
             | wrong Direction\n");
@@ -707,6 +706,7 @@ void BrickGameLG::
 spawn_current_tetramino() {
     TetraminoOrientation current_tetramino_orientation 
         = current_tetramino.orientations[current_tetramino.current_orientation]; 
+
     check_tetramino_orientation(current_tetramino_orientation);
     for(uint64_t xptr = 0; xptr < current_tetramino_orientation.map.size(); xptr++) {
         for(uint64_t yptr = 0; yptr < current_tetramino_orientation.map[0].size(); yptr++) {
@@ -715,6 +715,10 @@ spawn_current_tetramino() {
 					.map[xptr][yptr].type == brick) {
                 /* Brick position in the field */
                 uvec2 absolute_brick_pos = current_tetramino.pos + uvec2({xptr, yptr});
+                if(field[absolute_brick_pos[_x]][absolute_brick_pos[_y]].type == brick) {
+                    /* Place is taken. Game over */
+                    game_over = true;
+                }
                 field[absolute_brick_pos[_x]][absolute_brick_pos[_y]] = 
 					current_tetramino
 					.orientations[current_tetramino.current_orientation]
@@ -779,4 +783,9 @@ tick() {
         spawn_current_tetramino();
     }
     last_tick = std::chrono::system_clock::now();
+}
+
+bool BrickGameLG::
+is_game_over() {
+    return game_over;
 }
