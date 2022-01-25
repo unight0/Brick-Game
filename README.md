@@ -1,6 +1,5 @@
 # Brick Game
-This is my version of Brick Game.
-Pet project.
+This is my version of Brick Game(Tetris).
 
 ## Screenshots
 ![](https://github.com/unight0/Brick-Game/blob/main/brick-game-screenshot.png)
