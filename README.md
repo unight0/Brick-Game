@@ -1,5 +1,6 @@
 # Brick Game
 This is my version of Brick Game(Tetris).
+Note: very raw and unfinished, will not be developed further.
 
 ## Screenshots
 ![](https://github.com/unight0/Brick-Game/blob/main/brick-game-screenshot.png)
